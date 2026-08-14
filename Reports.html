@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Reports & Analytics - Rent Book Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Mobile Drawer Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+        <div class="d-flex align-items-center gap-2">
+            <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle Menu">
+                <i class="bi bi-list"></i>
+            </button>
+            <span class="fw-bold fs-5 text-white">Rent Book</span>
+        </div>
+        <span class="badge bg-primary-soft rounded-pill">Pro</span>
+    </header>
+
+    <div class="wrapper">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <h3 class="logo mb-0"><i class="bi bi-truck-front-fill"></i><span>Rent Book</span></h3>
+                <button class="mobile-menu-btn d-md-none" onclick="toggleSidebar()"><i class="bi bi-x-lg"></i></button>
+            </div>
+            
+            <ul class="menu mt-3">
+                <li><a href="index.html"><i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span></a></li>
+                <li><a href="vehicles.html"><i class="bi bi-car-front-fill"></i><span>Vehicles</span></a></li>
+                <li><a href="customers.html"><i class="bi bi-people-fill"></i><span>Customers</span></a></li>
+                <li><a href="rent.html"><i class="bi bi-cash-stack"></i><span>Monthly Rent</span></a></li>
+                <li><a href="expenses.html"><i class="bi bi-wallet2"></i><span>Expenses</span></a></li>
+                <li class="active"><a href="reports.html"><i class="bi bi-bar-chart-line-fill"></i><span>Reports</span></a></li>
+                <li><a href="ledger.html"><i class="bi bi-journal-bookmark-fill"></i><span>Vehicle Ledger</span></a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="content">
+            <div class="topbar">
+                <div>
+                    <h2 class="page-title">Customer Reports</h2>
+                    <p class="text-muted small mb-0">Analytics on customer rental revenues and vehicle profitability.</p>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="row g-4 mb-4">
+                <!-- Customer Revenue Chart -->
+                <div class="col-lg-6">
+                    <div class="panel-card p-3 p-md-4">
+                        <h5 class="fw-bold mb-3 fs-6">Revenue by Customer</h5>
+                        <div style="height: 280px; position: relative;">
+                            <canvas id="customerChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vehicle Revenue vs Expenses Chart -->
+                <div class="col-lg-6">
+                    <div class="panel-card p-3 p-md-4">
+                        <h5 class="fw-bold mb-3 fs-6">Vehicle Performance</h5>
+                        <div style="height: 280px; position: relative;">
+                            <canvas id="vehicleChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Revenue Breakdown Table -->
+            <div class="panel-card p-3 p-md-4">
+                <h5 class="fw-bold mb-3 fs-6">Customer Ledger Summary</h5>
+                <div class="table-responsive">
+                    <table class="table custom-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Customer Name</th>
+                                <th>Total Transactions</th>
+                                <th>Total Rent Paid</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerSummaryList"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById("sidebar").classList.toggle("show");
+            document.getElementById("sidebarOverlay").classList.toggle("active");
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            let rents = JSON.parse(localStorage.getItem("rents")) || [];
+            let customers = JSON.parse(localStorage.getItem("customers")) || [];
+
+            // Aggregate Customer Income
+            let customerRevenue = {};
+            let customerTxCount = {};
+
+            rents.forEach(r => {
+                let name = r.customer || "Unassigned";
+                let amt = Number(r.amount) || 0;
+                customerRevenue[name] = (customerRevenue[name] || 0) + amt;
+                customerTxCount[name] = (customerTxCount[name] || 0) + 1;
+            });
+
+            // Customer Summary Table
+            let tbody = document.getElementById("customerSummaryList");
+            let cKeys = Object.keys(customerRevenue);
+
+            if (cKeys.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-4">No customer payment data recorded yet.</td></tr>`;
+            } else {
+                tbody.innerHTML = cKeys.map(name => `
+                    <tr>
+                        <td class="fw-bold text-dark">${name}</td>
+                        <td>${customerTxCount[name]} Payments</td>
+                        <td class="text-success fw-bold">₹${customerRevenue[name].toLocaleString('en-IN')}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Render Customer Chart
+            new Chart(document.getElementById('customerChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: cKeys.length ? cKeys : ['No Data'],
+                    datasets: [{
+                        data: cKeys.length ? Object.values(customerRevenue) : [1],
+                        backgroundColor: ['#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            // Vehicle Revenue Chart
+            let vehicleRevenue = {};
+            rents.forEach(r => {
+                let v = r.vehicle || "Unknown";
+                vehicleRevenue[v] = (vehicleRevenue[v] || 0) + (Number(r.amount) || 0);
+            });
+
+            let vKeys = Object.keys(vehicleRevenue);
+            new Chart(document.getElementById('vehicleChart'), {
+                type: 'bar',
+                data: {
+                    labels: vKeys.length ? vKeys : ['No Data'],
+                    datasets: [{
+                        label: 'Revenue (₹)',
+                        data: vKeys.length ? Object.values(vehicleRevenue) : [0],
+                        backgroundColor: '#0ea5e9',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

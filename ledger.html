@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Ledger - GadiBook</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+     <!-- Mobile Drawer Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+        <div class="d-flex align-items-center gap-2">
+            <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle Menu">
+                <i class="bi bi-list"></i>
+            </button>
+            <span class="fw-bold fs-5 text-white">Rent Book</span>
+        </div>
+        <span class="badge bg-primary-soft rounded-pill">Pro</span>
+    </header>
+
+    <div class="wrapper">
+      <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <h3 class="logo mb-0"><i class="bi bi-truck-front-fill"></i><span>Rent Book</span></h3>
+                <button class="mobile-menu-btn d-md-none" onclick="toggleSidebar()"><i class="bi bi-x-lg"></i></button>
+            </div>
+            
+            <ul class="menu mt-3">
+                <li><a href="index.html"><i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span></a></li>
+                <li><a href="vehicles.html"><i class="bi bi-car-front-fill"></i><span>Vehicles</span></a></li>
+                <li><a href="customers.html"><i class="bi bi-people-fill"></i><span>Customers</span></a></li>
+                <li><a href="rent.html"><i class="bi bi-cash-stack"></i><span>Monthly Rent</span></a></li>
+                <li><a href="expenses.html"><i class="bi bi-wallet2"></i><span>Expenses</span></a></li>
+                <li><a href="reports.html"><i class="bi bi-bar-chart-line-fill"></i><span>Reports</span></a></li>
+                <li class="active"><a href="ledger.html"><i class="bi bi-journal-bookmark-fill"></i><span>Vehicle Ledger</span></a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="content d-print-none">
+            <!-- Topbar Header -->
+            <div class="topbar d-flex align-items-center justify-content-between gap-2 mb-3">
+                <div>
+                    <h2 class="page-title h4 mb-1">Vehicle Ledger & Hisab</h2>
+                    <p class="text-muted small mb-0 d-none d-sm-block">Track unified revenue, operational expenses, and net profit per vehicle.</p>
+                </div>
+                
+                <!-- Top Header Print Button -->
+                <button class="btn btn-primary text-nowrap" onclick="printLedgerStatement()">
+                    <i class="bi bi-printer-fill me-md-1"></i>
+                    <span class="d-none d-md-inline">Print / Download PDF</span>
+                </button>
+            </div>
+
+            <!-- Floating Mobile Print Button -->
+            <button class="btn btn-primary rounded-circle shadow-lg d-lg-none mobile-fab-btn" onclick="printLedgerStatement()" aria-label="Print Statement">
+                <i class="bi bi-printer-fill fs-4"></i>
+            </button>
+
+            <!-- Filter Controls -->
+            <div class="panel-card p-3 mb-4">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted">Filter Vehicle</label>
+                        <select id="filterVehicle" class="form-select" onchange="renderLedger()">
+                            <option value="">All Vehicles</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted">Select Month</label>
+                        <input type="month" id="filterMonth" class="form-select" onchange="renderLedger()">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted">Type</label>
+                        <select id="filterType" class="form-select" onchange="renderLedger()">
+                            <option value="ALL">All Types</option>
+                            <option value="INCOME">Rent Only</option>
+                            <option value="EXPENSE">Expense Only</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted">Search</label>
+                        <input type="text" id="filterSearch" class="form-control" placeholder="Search..." onkeyup="renderLedger()">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary KPI Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="panel-card p-3 border-start border-success border-4">
+                        <div class="text-muted small fw-bold text-uppercase">Total Rent Income</div>
+                        <h3 class="text-success fw-bold mb-0" id="totalIncomeTxt">₹ 0</h3>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="panel-card p-3 border-start border-danger border-4">
+                        <div class="text-muted small fw-bold text-uppercase">Total Expenses</div>
+                        <h3 class="text-danger fw-bold mb-0" id="totalExpenseTxt">₹ 0</h3>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="panel-card p-3 border-start border-primary border-4">
+                        <div class="text-muted small fw-bold text-uppercase">Net Balance / Profit</div>
+                        <h3 class="text-primary fw-bold mb-0" id="netProfitTxt">₹ 0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ledger Table -->
+            <div class="panel-card p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-list-columns-reverse me-2"></i>Ledger Entries</h5>
+                    <span class="badge bg-secondary" id="recordCount">0 Records</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table custom-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Vehicle</th>
+                                <th>Type</th>
+                                <th>Particulars / Category</th>
+                                <th>Description</th>
+                                <th class="text-end text-success">Income (₹)</th>
+                                <th class="text-end text-danger">Expense (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ledgerList"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Printable Invoice/Ledger Area -->
+    <div id="printArea" class="d-none d-print-block"></div>
+
+    <!-- Invoice/Print Stylesheet -->
+    <style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #printArea, #printArea * {
+            visibility: visible;
+        }
+        #printArea {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            color: #1e293b;
+            background: #fff;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .invoice-card {
+            border: 1px solid #cbd5e1;
+            padding: 25px;
+            border-radius: 8px;
+        }
+
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #2b3674;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .company-title {
+            font-size: 26px;
+            font-weight: 800;
+            color: #2b3674;
+            text-transform: uppercase;
+        }
+
+        .invoice-badge {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2b3674;
+            text-align: right;
+        }
+
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            margin-bottom: 20px;
+        }
+
+        .invoice-table th {
+            background-color: #2b3674 !important;
+            color: #ffffff !important;
+            font-size: 11px;
+            text-transform: uppercase;
+            padding: 8px;
+            text-align: left;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .invoice-table td {
+            padding: 8px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 12px;
+        }
+
+        .summary-box {
+            float: right;
+            width: 300px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 12px;
+            background-color: #f8fafc !important;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+
+        .grand-total {
+            font-weight: bold;
+            font-size: 15px;
+            border-top: 2px solid #2b3674;
+            padding-top: 6px;
+        }
+
+        .signature-section {
+            margin-top: 60px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .sign-box {
+            text-align: center;
+            width: 200px;
+            border-top: 1px dashed #94a3b8;
+            padding-top: 5px;
+            font-size: 12px;
+            color: #475569;
+        }
+    }
+    </style>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById("sidebar").classList.toggle("show");
+            document.getElementById("sidebarOverlay").classList.toggle("active");
+        }
+
+        function populateVehicleFilter() {
+            let vehicles = [];
+            try {
+                vehicles = JSON.parse(localStorage.getItem("vehicles")) || [];
+            } catch (e) {
+                vehicles = [];
+            }
+            let select = document.getElementById("filterVehicle");
+            select.innerHTML = `<option value="">All Vehicles</option>` + 
+                vehicles.map(v => `<option value="${v.registration}">${v.registration} - ${v.vehicleName || v.name || ''}</option>`).join('');
+        }
+
+        function getCombinedLedgerData() {
+            let expenses = [];
+            let rents = [];
+
+            try {
+                expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+            } catch (e) { expenses = []; }
+
+            try {
+                rents = JSON.parse(localStorage.getItem("rents")) || JSON.parse(localStorage.getItem("rent")) || [];
+            } catch (e) { rents = []; }
+
+            let ledger = [];
+
+            // Add Expenses
+            expenses.forEach(e => {
+                ledger.push({
+                    date: e.date || '',
+                    vehicle: e.vehicle || 'N/A',
+                    type: 'EXPENSE',
+                    category: e.category || 'Expense',
+                    description: e.description || '-',
+                    income: 0,
+                    expense: Number(e.amount || 0)
+                });
+            });
+
+            // Add Rent Income
+            rents.forEach(r => {
+                ledger.push({
+                    date: r.date || r.month || '',
+                    vehicle: r.vehicle || 'N/A',
+                    type: 'INCOME',
+                    category: r.customer ? `Rent (${r.customer})` : 'Rent Income',
+                    description: r.description || r.notes || 'Monthly Rent Entry',
+                    income: Number(r.amount || 0),
+                    expense: 0
+                });
+            });
+
+            // Sort chronologically (newest first)
+            ledger.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            return ledger;
+        }
+
+        function renderLedger() {
+            let allEntries = getCombinedLedgerData();
+            let selectedVehicle = document.getElementById("filterVehicle").value;
+            let selectedMonth = document.getElementById("filterMonth").value; // Format: YYYY-MM
+            let selectedType = document.getElementById("filterType").value;
+            let searchKeyword = document.getElementById("filterSearch").value.toLowerCase().trim();
+
+            let filtered = allEntries.filter(item => {
+                let matchVehicle = !selectedVehicle || item.vehicle === selectedVehicle;
+                let matchMonth = !selectedMonth || (item.date && item.date.startsWith(selectedMonth));
+                let matchType = selectedType === 'ALL' || item.type === selectedType;
+                let matchSearch = !searchKeyword || 
+                    item.vehicle.toLowerCase().includes(searchKeyword) ||
+                    item.category.toLowerCase().includes(searchKeyword) ||
+                    item.description.toLowerCase().includes(searchKeyword);
+
+                return matchVehicle && matchMonth && matchType && matchSearch;
+            });
+
+            let totalIncome = 0;
+            let totalExpense = 0;
+            let tbody = document.getElementById("ledgerList");
+
+            document.getElementById("recordCount").innerText = `${filtered.length} Entries`;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No transaction history found for selected filters.</td></tr>`;
+                document.getElementById("totalIncomeTxt").innerText = `₹ 0`;
+                document.getElementById("totalExpenseTxt").innerText = `₹ 0`;
+                document.getElementById("netProfitTxt").innerText = `₹ 0`;
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(item => {
+                totalIncome += item.income;
+                totalExpense += item.expense;
+
+                let isIncome = item.type === 'INCOME';
+                let typeBadge = isIncome 
+                    ? `<span class="badge bg-success-soft text-success"><i class="bi bi-arrow-down-left me-1"></i>Rent</span>`
+                    : `<span class="badge bg-danger-soft text-danger"><i class="bi bi-arrow-up-right me-1"></i>Expense</span>`;
+
+                html += `
+                    <tr>
+                        <td><small class="fw-medium">${item.date || '-'}</small></td>
+                        <td class="fw-bold text-dark">${item.vehicle}</td>
+                        <td>${typeBadge}</td>
+                        <td class="fw-medium">${item.category}</td>
+                        <td><span class="text-muted small">${item.description}</span></td>
+                        <td class="text-end fw-bold text-success">${item.income > 0 ? '₹ ' + item.income.toLocaleString('en-IN') : '-'}</td>
+                        <td class="text-end fw-bold text-danger">${item.expense > 0 ? '₹ ' + item.expense.toLocaleString('en-IN') : '-'}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+
+            let netProfit = totalIncome - totalExpense;
+            document.getElementById("totalIncomeTxt").innerText = `₹ ${totalIncome.toLocaleString('en-IN')}`;
+            document.getElementById("totalExpenseTxt").innerText = `₹ ${totalExpense.toLocaleString('en-IN')}`;
+            
+            let netElement = document.getElementById("netProfitTxt");
+            netElement.innerText = `₹ ${netProfit.toLocaleString('en-IN')}`;
+            netElement.className = netProfit >= 0 ? "text-success fw-bold mb-0" : "text-danger fw-bold mb-0";
+        }
+
+        function resetFilters() {
+            document.getElementById("filterVehicle").value = "";
+            document.getElementById("filterMonth").value = "";
+            document.getElementById("filterType").value = "ALL";
+            document.getElementById("filterSearch").value = "";
+            renderLedger();
+        }
+
+        function printLedgerStatement() {
+            let allEntries = getCombinedLedgerData();
+            let selectedVehicle = document.getElementById("filterVehicle").value;
+            let selectedMonth = document.getElementById("filterMonth").value;
+            let selectedType = document.getElementById("filterType").value;
+
+            let filtered = allEntries.filter(item => {
+                let matchVehicle = !selectedVehicle || item.vehicle === selectedVehicle;
+                let matchMonth = !selectedMonth || (item.date && item.date.startsWith(selectedMonth));
+                let matchType = selectedType === 'ALL' || item.type === selectedType;
+                return matchVehicle && matchMonth && matchType;
+            });
+
+            if (filtered.length === 0) {
+                alert("No ledger data available to print.");
+                return;
+            }
+
+            let totalIncome = filtered.reduce((s, x) => s + x.income, 0);
+            let totalExpense = filtered.reduce((s, x) => s + x.expense, 0);
+            let netBalance = totalIncome - totalExpense;
+
+            let currentDate = new Date().toLocaleDateString('en-IN', {
+                day: '2-digit', month: 'short', year: 'numeric'
+            });
+
+            // Format Month string for Print Title
+            let monthLabel = "All Months";
+            if (selectedMonth) {
+                let [year, month] = selectedMonth.split('-');
+                let dateObj = new Date(year, month - 1);
+                monthLabel = dateObj.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+            }
+
+            let tableRows = filtered.map((item, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.date || '-'}</td>
+                    <td><strong>${item.vehicle}</strong></td>
+                    <td>${item.category}</td>
+                    <td>${item.description}</td>
+                    <td style="text-align: right; color: #16a34a;">${item.income > 0 ? '₹ ' + item.income.toLocaleString('en-IN') : '-'}</td>
+                    <td style="text-align: right; color: #dc2626;">${item.expense > 0 ? '₹ ' + item.expense.toLocaleString('en-IN') : '-'}</td>
+                </tr>
+            `).join('');
+
+            let printHTML = `
+                <div class="invoice-card">
+                    <div class="invoice-header">
+                        <div>
+                            <div class="company-title"><i class="bi bi-truck-front-fill"></i> Rent Book</div>
+                            <div style="font-size: 12px; color: #64748b;">Vehicle Ledger & Hisab Statement</div>
+                        </div>
+                        <div>
+                            <div class="invoice-badge">STATEMENT</div>
+                            <div style="font-size: 12px; color: #475569; text-align: right;">Date: ${currentDate}</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 15px; font-size: 13px;">
+                        <strong>Month:</strong> ${monthLabel} | 
+                        <strong>Vehicle Filter:</strong> ${selectedVehicle || 'All Vehicles'} | 
+                        <strong>Total Records:</strong> ${filtered.length}
+                    </div>
+
+                    <table class="invoice-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Date</th>
+                                <th>Vehicle</th>
+                                <th>Category / Particulars</th>
+                                <th>Description</th>
+                                <th style="text-align: right;">Income (₹)</th>
+                                <th style="text-align: right;">Expense (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+
+                    <div class="summary-box">
+                        <div class="summary-row">
+                            <span>Total Rent Income:</span>
+                            <span style="color: #16a34a; font-weight: bold;">₹ ${totalIncome.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Total Expenses:</span>
+                            <span style="color: #dc2626; font-weight: bold;">₹ ${totalExpense.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div class="summary-row grand-total">
+                            <span>Net Balance:</span>
+                            <span>₹ ${netBalance.toLocaleString('en-IN')}</span>
+                        </div>
+                    </div>
+
+                    <div style="clear: both;"></div>
+
+                    <div class="signature-section">
+                        <div class="sign-box">Prepared By</div>
+                        <div class="sign-box">Authorized Signatory (Rent Book)</div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById("printArea").innerHTML = printHTML;
+            window.print();
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            populateVehicleFilter();
+            renderLedger();
+        });
+    </script>
+</body>
+</html>
